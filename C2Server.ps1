@@ -68,7 +68,7 @@ function Invoke-AESEncryption {
       $shaManaged = New-Object System.Security.Cryptography.SHA256Managed
       $aesManaged = New-Object System.Security.Cryptography.AesManaged
       $aesManaged.Mode = [System.Security.Cryptography.CipherMode]::CBC
-      $aesManaged.Padding = [System.Security.Cryptography.PaddingMode]::Zeros
+      $aesManaged.Padding = [System.Security.Cryptography.PaddingMode]::PKCS7
       $aesManaged.BlockSize = 128
       $aesManaged.KeySize = 256 }
 
