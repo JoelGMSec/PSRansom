@@ -242,7 +242,7 @@ $btn.Width = 500
 $form.Controls.Add($btn)
 $btn.ForeColor = "Red"
 $startTime = [DateTime]::Now
-$count = 1.6
+$count = 10.6
 $timer=New-Object System.Windows.Forms.Timer
 $timer.add_Tick({$elapsedSeconds = ([DateTime]::Now - $startTime).TotalSeconds ; $remainingSeconds = $count - $elapsedSeconds
 if ($remainingSeconds -like "-0.1*"){ $timer.Stop() ; $okbutton.Visible = $true ; $btn.Text = "0 Seconds remaining.." }
